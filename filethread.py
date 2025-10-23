@@ -27,7 +27,7 @@ threadArray=[]
 bestPath=[]
 filesArray=[]
 
-minRange = 32 # smallest matching region in bytes
+minRange = 8 # smallest matching region in bytes
 maxRange = 10240 # 10k ought to be enough for anyone
 HSize = 1500
 VSIZE = 1000 # 3:2 aspect ratio for the output image.

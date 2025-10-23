@@ -74,7 +74,10 @@ for startNode in range(0,matrixDimension):
 bestPath=pathsArray[pathLengthArray.index(min(pathLengthArray))]
 
 returnText=""
+
+# results seem to be reversed based on chronological order. So reverse the results?
+flippedPath = np.flip(bestPath)
 for x in range(0, len(bestPath)):
-	returnText+=str(bestPath[x]) + " "
+	returnText+=str(flippedPath[x]) + " "
 
 print(returnText)
