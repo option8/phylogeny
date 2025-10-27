@@ -76,7 +76,7 @@ done
 # run the magic python "shortest path" script
 bestPath=$(python3 $binDir/findPath.py $pathsArray)
 
-# ingest the resutling list as an array, why not?
+# ingest the resulting list as an array, why not?
 parts=(${(@s: :)bestPath})
 
 echo "Reordered:"
