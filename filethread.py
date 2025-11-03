@@ -27,16 +27,16 @@ threadArray=[]
 bestPath=[]
 filesArray=[]
 
-minRange = 8 # smallest matching region in bytes
+minRange = 32 # smallest matching region in bytes
 maxRange = 10240 # 10k ought to be enough for anyone
 HSize = 1500
 VSIZE = 1000 # 3:2 aspect ratio for the output image.
-Padding=50
-
+Padding = 50
 
 ### SETUP
+threadMode = sys.argv[1]
 
-for argNum in range(1,len(sys.argv)):
+for argNum in range(2,len(sys.argv)):
 	filesArray.append(sys.argv[argNum])
 
 HScale = math.floor(HSize / len(filesArray))
@@ -72,6 +72,7 @@ def reset():
 	hexDumpArray=[]
 
 	global VScale
+	global hexFactor
 
 	VScale = 1
 
@@ -81,23 +82,22 @@ def reset():
 		print(filesArray[fileNum])
 
 # skip this and open as text if file is text?	
-		binary=open(filesArray[fileNum],"rb").read()
+		if threadMode=="bin":
+			binary=open(filesArray[fileNum],"rb").read()	
+			hexDumpArray.append(hexdump.dump(binary).replace("00 00 ", "") )	# remove 00 padding in sparse data
+			hexFactor = 3
+			
+		else: #threadMode=txt
+			binary=open(filesArray[fileNum],"r").read()	
+			hexDumpArray.append(binary)	# add text files as-is
+			hexFactor = 1
 		
-		hexDumpArray.append(hexdump.dump(binary).replace("00 00 ", "") )	# remove 00 padding in sparse data
-		
-		pVScale = VSIZE/(len(hexDumpArray[fileNum])/3) 	# fit the largest file vertically, but scale all files the same amount. 
-														# Can't do this with original binary size since some are 00 padded or "sparse"
+		pVScale = VSIZE/(len(hexDumpArray[fileNum])/hexFactor) 	# fit the largest file vertically, but scale all files the same amount. 
+
+# Can't do this with original binary size since some are 00 padded or "sparse"
 		if pVScale < VScale:
 			VScale = pVScale
 			
-		# set up score matrix for sorting
-# 		scoreMatrix.append([])
-	
-# 	while len(scoreMatrix[0]) < len(scoreMatrix): # make a square matrix
-# 		for colNum in range(0,len(scoreMatrix)):
-# 			scoreMatrix[colNum].append([])
-#	print(scoreMatrix)
-
 
 # for each pair of files, find matching segments.
 # outputs matchArray and similarity scores
@@ -129,8 +129,10 @@ def matchBlocks( matchType ):
 		
 		lastResult=""
 		originByte=0
-		originLength = math.floor( (len(hexDumpArray[originFile])-3 ) / 3)
 		
+		originLength = math.floor( (len(hexDumpArray[originFile])- hexFactor ) / hexFactor)
+		
+	
 		print(f" {targetFile}/{len(hexDumpArray)}")
 		while originByte < originLength :
 	
@@ -140,8 +142,8 @@ def matchBlocks( matchType ):
 		
 				if int(originByte + byteLength) < int(originLength) : # don't try to read past the end. oof.
 				
-					charLength = int(3 * byteLength) # searching for hexdump strings, so 3 chars per byte
-					originChars = int(3 * originByte) # searching for hexdump strings, so 3 chars per byte
+					charLength = int(hexFactor * byteLength) # searching for hexdump strings, so 3 chars per byte
+					originChars = int(hexFactor * originByte) # searching for hexdump strings, so 3 chars per byte
 							
 					byteBlock = hexDumpArray[originFile][originChars:originChars+charLength] # block of bytes to search for
 
@@ -149,7 +151,7 @@ def matchBlocks( matchType ):
 					wordIndex = hexDumpArray[targetFile].find(byteBlock)
 							
 					if wordIndex != -1:
-						byteIndex = int(wordIndex/3)		
+						byteIndex = int(wordIndex/hexFactor)		
 						lastResult= f"{originFile}:{targetFile}\t{byteLength}\t{originByte}\t{byteIndex}"
 						
 					else:
@@ -194,7 +196,7 @@ def matchBlocks( matchType ):
 				
 			if len(lastResult) > 0:	### matched on end of file/bytesize loop
 				
-				byteIndex = int(wordIndex/3)
+				byteIndex = int(wordIndex/hexFactor)
 
 				currentMatch=[]
 				currentMatch.append(byteLength-1)
@@ -253,56 +255,7 @@ def matchBlocks( matchType ):
 # 	pathsArray=[]
 # 	pathLengthArray=[]
 
-### what follows is all made redundant by pbzCompare.sh
-# 	if matchType=="full":	
-# 		for startNode in range(0,len(scoreMatrix)):
-# 		
-# 			# brute force nearest neighbors.
-# 			# checklist = 0 - len(scoreMatrix)
-# 			nodeList = [x for x in range(0, len(scoreMatrix))]
-# 			# start with node 0
-# 		#	startNode = 0
-# 			pathLength = 0 
-# 			currentNode = startNode
-# 			currentPath = []
-# 			
-# 			while len(nodeList) > 0:
-# 	#			print("NODES", nodeList)
-# 				
-# 	#			print(f"ROW {currentNode}", scoreMatrix[currentNode])
-# 				
-# 				# remove that from the checklist
-# 				if currentNode in nodeList:
-# 					nodeList.remove(currentNode)
-# 					currentPath.append(currentNode)
-# 				else:
-# 					break
-# 				
-# 				# find nearest node in scoreMatrix
-# 				# nextNode = scoreMatrix[currentNode].index(min(scoreMatrix[currentNode]))
-# 				
-# 				maxScore=0
-# 
-# 		
-# 				for candidate in nodeList:
-# 	#				print(scoreMatrix[currentNode][candidate])
-# 		
-# 					if scoreMatrix[currentNode][candidate] > maxScore:
-# 						maxScore = scoreMatrix[currentNode][candidate]
-# 						nextNode = candidate
-# 				
-# 	#			print("NEXT", nextNode, minScore)
-# 				pathLength += maxScore
-# 	
-# 				currentNode = nextNode
-# 	
-# 			print(f"Path {startNode} {currentPath} length:", pathLength) ## all out of nodes?
-# 			pathsArray.append(currentPath)
-# 			pathLengthArray.append(pathLength)
-# 
-# 	
-# 		bestPath=pathsArray[pathLengthArray.index(max(pathLengthArray))]
-# 		print(f"Best path: {bestPath}")
+
 
 # for each match found from file n to n+1, look for it in files n+2...
 # blocklength, file0loc, file1loc, ...filenloc
@@ -320,23 +273,12 @@ def doThreads( matchType ):
 			if blockMatch[x] is None:
 				continue
 			else:
-				originChars=int(blockMatch[x]) * 3
+				originChars=int(blockMatch[x]) * hexFactor
 				originFile=x-1
-				charLength=blockMatch[0] * 3
+				charLength=blockMatch[0] * hexFactor
 				byteBlock = hexDumpArray[originFile][originChars:originChars + charLength] # block of bytes to search for
 				break
-### redundant, again, but also overkill and makes the display too messy.
-# 		if matchType=="full":
-# 			for targetFile in range(0,len(hexDumpArray)):
-# 				if blockMatch[targetFile+1]==None:
-# 					wordIndex=hexDumpArray[targetFile].find(byteBlock)
-# 					if wordIndex != -1:
-# 						byteIndex = int(wordIndex/3)
-# 	#					print("found new match in ",targetFile+1)
-# 					else:
-# 						byteIndex = -1
-# 					
-# 					blockMatch[targetFile+1]= byteIndex
+
 			
 			
 def drawThreads() :

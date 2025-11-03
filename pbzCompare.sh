@@ -7,7 +7,6 @@
 # Based on concepts explained pretty well in this video:
 #	https://youtu.be/aLaYgzmRPa8?si=3t9V86oC-DqTrFyT
 
-
 zmodload zsh/mathfunc
 
 binDir=$(dirname $0)
@@ -16,16 +15,36 @@ workingDir=$(pwd)
 IFS=$'\n'
 pathsArray=()
 
+
 arrayIndex=1
 
 echo "$# Files:"
+
+threadMode="bin"
+
+# with each file in the command line to test
+for fileNum in $(seq 1 $#)
+do
+	
+	# if the file is text, preprocess
+	if [[ $(file -b --mime-type ${argv[$fileNum]} | sed 's|/.*||') == "text" ]]
+	then
+		TESTFile=${argv[$fileNum]}
+		TEMPFile="/tmp/tmp-$fileNum.txt"
+		echo "Preprocessing text file $TESTFile"
+		cat $TESTFile | tr "[:lower:]" "[:upper:]" | tr -cd "[:alnum:]" > "$TEMPFile"
+		argv[$fileNum]=$TEMPFile
+		threadMode="txt"
+
+	fi
+done
 
 # with each file in the command line to test
 for fileNum in $(seq 1 $#)
 do
 	
 	TESTFile=${argv[$fileNum]}
-	
+
 	# compress it into a temp file with pbzip2
 	cat "$TESTFile" | pbzip2 -c > "/tmp/Temp1"
 	
@@ -84,7 +103,8 @@ echo "Reordered:"
 # display and barf the list back out to the next python script
 for i in $parts
 do
-	threadsArgument+=$(printf " \"$workingDir/${argv[$i+1]}\" ")
+#	threadsArgument+=$(printf " \"$workingDir/${argv[$i+1]}\" ")
+	threadsArgument+=$(printf " \"${argv[$i+1]}\" ")
 done
 
-eval "python3 $binDir/filethread.py $threadsArgument"
+eval "python3 $binDir/filethread.py $threadMode $threadsArgument"
