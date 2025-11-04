@@ -2,20 +2,13 @@
 
 # REQ: https://github.com/cduck/drawsvg/blob/master/docs/index.md
 
-
-import re
+# import re
 import sys
 import os
 import math
 import hexdump
 import drawsvg as draw
-import random
-import numpy as np
-
-import csv
- 
-
-
+# import numpy as np
 
 ### arrays and variables
 colors=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
@@ -35,8 +28,9 @@ Padding = 50
 
 ### SETUP
 threadMode = sys.argv[1]
+outputFile = sys.argv[2]
 
-for argNum in range(2,len(sys.argv)):
+for argNum in range(3,len(sys.argv)):
 	filesArray.append(sys.argv[argNum])
 
 HScale = math.floor(HSize / len(filesArray))
@@ -234,29 +228,6 @@ def matchBlocks( matchType ):
 				
 			originByte = originByte+(byteLength-2) # skip ahead past matched area, but overlap last 2 bytes 
 		
-# 		try:
-# 			rowScore = math.sqrt( matchCount * matchSum )	## in case it's negative or 0.
-# 		except:
-# 			rowScore = 0
-# 		finally:
-# 			#scoreRow.append(rowScore)
-# 			scoreMatrix[originFile][targetFile]=rowScore
-# 			scoreMatrix[targetFile][originFile]=rowScore
-
-	
-#		scoreMatrix.append(scoreRow)
-
-
-#	print(scoreMatrix)
-
-# 	with open('filethread.csv', 'w', newline='') as file:
-# 		writer = csv.writer(file)
-# 		writer.writerows(scoreMatrix)
-# 	pathsArray=[]
-# 	pathLengthArray=[]
-
-
-
 # for each match found from file n to n+1, look for it in files n+2...
 # blocklength, file0loc, file1loc, ...filenloc
 
@@ -334,8 +305,8 @@ def drawThreads() :
 		colorIndex+=1
 		if colorIndex == len(colors):
 			colorIndex=0
-	d.save_png('filethread.png')
-	d.save_svg('filethread.svg')
+	d.save_png(outputFile +'.png')
+	d.save_svg(outputFile +'.svg')
 
 ### redundant
 def reorderFiles():

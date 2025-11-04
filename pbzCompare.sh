@@ -18,26 +18,38 @@ pathsArray=()
 
 arrayIndex=1
 
-echo "$# Files:"
+# command line switch for binary vs text parsing
+zparseopts -D -E -F -K -- b+=doBinary t+=doText o:=outputFile
+### -b				parse as binary (default)
+### -t				parse as text
+### -o filename		generates filename.PNG and filename.SVG 
 
-threadMode="bin"
+outputFile=$outputFile[-1] # either provided on the command line, or default path
 
-# with each file in the command line to test
-for fileNum in $(seq 1 $#)
-do
-	
-	# if the file is text, preprocess
-	if [[ $(file -b --mime-type ${argv[$fileNum]} | sed 's|/.*||') == "text" ]]
-	then
+if [[ -z $outputFile ]] 
+then
+	outputFile="filethread"
+fi
+
+if [[ ${#doText} -gt 0 ]]
+then
+	threadMode="txt"
+	# with each file in the command line to test
+	for fileNum in $(seq 1 $#)
+	do
 		TESTFile=${argv[$fileNum]}
-		TEMPFile="/tmp/tmp-$fileNum.txt"
-		echo "Preprocessing text file $TESTFile"
+		TEMPFile="/tmp/"$(echo $TESTFile | tr -c "[:alnum:]" ".")
+		echo "Preprocessing text file $TESTFile >> $TEMPFile"
 		cat $TESTFile | tr "[:lower:]" "[:upper:]" | tr -cd "[:alnum:]" > "$TEMPFile"
 		argv[$fileNum]=$TEMPFile
 		threadMode="txt"
 
-	fi
-done
+	done
+else # default
+	threadMode="bin"	
+fi
+
+echo "$# Files:"
 
 # with each file in the command line to test
 for fileNum in $(seq 1 $#)
@@ -107,4 +119,6 @@ do
 	threadsArgument+=$(printf " \"${argv[$i+1]}\" ")
 done
 
-eval "python3 $binDir/filethread.py $threadMode $threadsArgument"
+eval "python3 $binDir/filethread.py $threadMode $outputFile $threadsArgument"
+
+open "${outputFile}.png"
