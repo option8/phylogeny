@@ -1,14 +1,12 @@
-### FileThread 2025.08.08
+### FileThread 2025.11.04
 
 # REQ: https://github.com/cduck/drawsvg/blob/master/docs/index.md
 
-# import re
 import sys
 import os
 import math
 import hexdump
 import drawsvg as draw
-# import numpy as np
 
 ### arrays and variables
 colors=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']

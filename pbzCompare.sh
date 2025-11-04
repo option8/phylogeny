@@ -105,7 +105,7 @@ do
 done
 
 # run the magic python "shortest path" script
-bestPath=$(python3 $binDir/findPath.py $pathsArray)
+bestPath=$(python3 $binDir/findPath.py $threadMode $outputFile $pathsArray)
 
 # ingest the resulting list as an array, why not?
 parts=(${(@s: :)bestPath})
@@ -115,7 +115,6 @@ echo "Reordered:"
 # display and barf the list back out to the next python script
 for i in $parts
 do
-#	threadsArgument+=$(printf " \"$workingDir/${argv[$i+1]}\" ")
 	threadsArgument+=$(printf " \"${argv[$i+1]}\" ")
 done
 
