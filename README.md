@@ -15,29 +15,39 @@ This script performs two functions:
 ### Example
 ![14 releases of Patchomator.sh](https://github.com/option8/phylogeny/blob/main/examples/Patchomators.png?raw=true)
 
-This example image shows 14 released versions of another script I maintain, called [Patchomator](https://github.com/Mac-Nerd/patchomator/releases)
+This sample image shows 14 release versions of another script I maintain, called [Patchomator](https://github.com/Mac-Nerd/patchomator/releases)
 
-Vertical grey bars each represent an individual version of the file.
+Vertical grey bars each represent an individual version of the file. Corresponding file names are in black vertical text.
 
-Horizontal color bars connecting two file versions represent a region of the file that is common to both. Gaps appear where portions of the file differ from one version to the next. If a section of code, for example, has been moved from the end of the file to the beginning between versions, the colored bar representing that region of code will appear connecting the bottom of one bar to the top of the next.
+Horizontal color bars connecting two file versions represent a region of the file that is common to both. Gaps appear where portions of the file differ from one version to the next. If a section of code, for example, has been moved from the end of the file to the beginning between versions, the colored bar representing that region of code would appear connecting the bottom of one bar to the top of the next.
 
 ### Usage
 
-`zsh fileThread.zsh [-t / -b] [-o Output_FileName] file1 file2 ... filen`
- `-t` Forces sorting and comparison in *text mode* for ASCII or UTF-8 files.
- `-b` Forces sorting and comparison in *binary mode*, default. 
- `-o Output_Filename` Generates "Output_Filename.svg" and "Output_Filename.png" otherwise defaults to "filethread.svg/png"
+`zsh fileThread.zsh [-t / -b] [-s] [-o Output_FileName] file-1 file-2 ... file-n`
+
+ - `-t` Forces sorting and comparison in *text mode* for ASCII or UTF-8 files. 
+ 
+ - `-b` Forces sorting and comparison in *binary mode*, default. 
+ 
+ - `-s` Skips the sorting and re-ordering step, and threads the files in the order as given.
+ 
+ - `-o Output_Filename` Generates "Output_Filename.svg" and "Output_Filename.png" otherwise defaults to "filethread.svg/png"
+
+In *text mode*, any non-alphanumeric characters are removed, and everything that remains is converted to all upper case.
+
+In *binary mode*, repeated null (x00) bytes are collapsed, so the contents of sparse binaries can be compared without concern for empty space.
 
 ### Requirements
+
 Currently only tested on macOS Sequoia (15.x). Probably works on Tahoe, or any Mac with ZSH and Python 3.x.
 
-Requires installing `pbzip2` Install it with homebrew:
+Requires installing `pbzip2`. Install it with homebrew:
 ```brew install pbzip2```
 
-The compression/sorting scheme will work with `gzip`, `pkzip`, among others - but `pbzip` is most consistent in my testing.
+If you're interested in playing with the compression/sorting scheme, it will work with `gzip`, `pkzip`, among others - but `pbzip` was most consistent in my testing.
 
 ### To Do
 - Helptext and documentation
 - Error checking
 - Additional display/output options
-- Skip reordering or skip "threading"
+- Options to skip "threading" (reorder-only) and output distance matric for actual phylogeny analysis.

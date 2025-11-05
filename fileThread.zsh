@@ -18,7 +18,7 @@ arrayIndex=1
 TEMPDIR=$(mktemp -d -t fileThread)
 
 # command line switch for binary vs text parsing
-zparseopts -D -E -F -K -- b+=doBinary t+=doText o:=outputFile
+zparseopts -D -E -F -K -- b+=doBinary t+=doText o:=outputFile s+=skipReorder
 ### -b				parse as binary (default)
 ### -t				parse as text
 ### -o filename		generates filename.PNG and filename.SVG 
@@ -48,60 +48,73 @@ else # default
 	threadMode="bin"	
 fi
 
-echo "$# Files:"
 
-# with each file in the command line to test
-for fileNum in $(seq 1 $#)
-do
-	
-	TESTFile=${argv[$fileNum]}
 
-	# compress it into a temp file with pbzip2
-	cat "$TESTFile" | pbzip2 -c > "$TEMPDIR/Temp1"
+
+if [[ ${#skipReorder} -gt 0 ]]
+then
+	threadMode="skip"
+	pathsArray=({0..$(($# * $#))})
+	echo pathsArray
 	
-	StartZ=$(stat -f %z "$TEMPDIR/Temp1")
-		
-	for AdditionalNum in $(seq 1 $#)
+else 
+	echo "$# Files to consider."
+	# with each file in the command line to test
+	for fileNum in $(seq 1 $#)
 	do
-		# combine each candidate file with every other file in the list
-		AdditionalTEST=${argv[$AdditionalNum]}
-#		printf "${TESTFile} :: ${AdditionalTEST} = "
-
-		# score is "similarity" from 0 to 1. Same file? Score == 1.
-		if [[ $AdditionalNum -eq $fileNum ]]
-		then
-			comboScore=1.0
-		else
-			# first compress additional file by itself.
-			cat "$AdditionalTEST" | pbzip2 -c > "$TEMPDIR/Temp2"
-			
-			# get the compressed size
-			EndZ=$(stat -f %z "$TEMPDIR/Temp2")
-			
-			# get the combined filesize of the compressed files
-			CompCat=$(($StartZ + $EndZ))
-
-			# finally, combine the two uncompressed files, then compress that.
-			cat "$TESTFile" "$AdditionalTEST" | pbzip2 -c > "$TEMPDIR/TempZ"
-
-			# the similarity score is the ratio of the size of the combined compressed files and the sum of the separately compressed files
-			comboScore=$(( (1.0000 * $(stat -f %z "$TEMPDIR/TempZ")/CompCat) ))
-						
-		fi
 		
-		# write that down.
-		pathsArray[$arrayIndex]="$comboScore"
+		TESTFile=${argv[$fileNum]}
+	
+		# compress it into a temp file with pbzip2
+		cat "$TESTFile" | pbzip2 -c > "$TEMPDIR/Temp1"
+		
+		StartZ=$(stat -f %z "$TEMPDIR/Temp1")
+			
+		for AdditionalNum in $(seq 1 $#)
+		do
+			# combine each candidate file with every other file in the list
+			AdditionalTEST=${argv[$AdditionalNum]}
+	#		printf "${TESTFile} :: ${AdditionalTEST} = "
+	
+			# score is "similarity" from 0 to 1. Same file? Score == 1.
+			if [[ $AdditionalNum -eq $fileNum ]]
+			then
+				comboScore=1.0
+			else
+				# first compress additional file by itself.
+				cat "$AdditionalTEST" | pbzip2 -c > "$TEMPDIR/Temp2"
+				
+				# get the compressed size
+				EndZ=$(stat -f %z "$TEMPDIR/Temp2")
+				
+				# get the combined filesize of the compressed files
+				CompCat=$(($StartZ + $EndZ))
+	
+				# finally, combine the two uncompressed files, then compress that.
+				cat "$TESTFile" "$AdditionalTEST" | pbzip2 -c > "$TEMPDIR/TempZ"
+	
+				# the similarity score is the ratio of the size of the combined compressed files and the sum of the separately compressed files
+				comboScore=$(( (1.0000 * $(stat -f %z "$TEMPDIR/TempZ")/CompCat) ))
+							
+			fi
+			
+			# write that down.
+			pathsArray[$arrayIndex]="$comboScore"
+			
+			# show progress.
+			printf ". "
+			
+			arrayIndex=$((arrayIndex+1))		
+		done
 		
 		# show progress.
-		printf ". "
-		
-		arrayIndex=$((arrayIndex+1))		
-	done
+		printf "\n"
 	
-	# show progress.
-	printf "\n"
+	done
 
-done
+fi
+
+
 
 # run the magic python "shortest path" script
 python3 $binDir/findPath.py $threadMode $outputFile ${argv[@]} $pathsArray

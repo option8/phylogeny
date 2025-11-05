@@ -9,23 +9,20 @@ import numpy as np
 import sys
 import os
 import math
-import hexdump
 import drawsvg as draw
 
 ### arrays and variables
 colors=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
 
-hexDumpArray=[]
-matchesArray=[]
-threadArray=[]
-bestPath=[]
 filesArray=[]
 scoreMatrix=[]
 pathsArray=[]
 pathLengthArray=[]
+matchesArray=[]
+fullArray=[]
 
-minRange = 32 # smallest matching region in bytes
-maxRange = 10240 # 10k ought to be enough for anyone
+minRange = 8 # smallest matching region in bytes
+#maxRange = 10240 # 10k ought to be enough for anyone
 HSize = 1500
 VSIZE = 1000 # 3:2 aspect ratio for the output image.
 Padding = 50
@@ -46,62 +43,78 @@ filesArray = sys.argv[3:matrixDimension+3]
 
 fullArray = [float(n) for n in sys.argv[matrixDimension+3:]]
 
+
+### SETUP for drawing
+
+HScale = math.floor(HSize / matrixDimension)
+d = draw.Drawing(HSize, VSIZE+Padding*2, origin=(-1*Padding,-1*Padding)) 
+d.set_pixel_scale(1) # for converting SVG to PNG
+d.append(draw.Rectangle(-1*Padding, -1*Padding, HSize, VSIZE+Padding*2 , fill='#FFFFFF')) # fill the canvas with white bg
+
+
+
 ### functions
 
-def findBestPath() :
+def findBestPath( threadMode ) :
 
 	global REORDERED_ARRAY
+	global bestPath
+	bestPath=[]
 
-	# break the full array down into rows
-	for rowNum in range(0, matrixDimension) :
-		rowMatrix=[]
-		for colNum in range(0, matrixDimension):
-			matrixIndex=rowNum * matrixDimension + colNum
-			rowMatrix.append(fullArray[matrixIndex])
-	
-		scoreMatrix.append(rowMatrix)
-	
-	
-	# brute force finding nearest neighbors in each row
-	for startNode in range(0,matrixDimension):
-	
-		# checklist = 0 - len(scoreMatrix)
-		nodeList = [x for x in range(0, matrixDimension)]
-		# start with node 0
-	#	startNode = 0
-		pathLength = 0 
-		currentNode = startNode
-		currentPath = []
+	if threadMode=="skip":
+		# skip the reordering and thread in the order files were given.
+		REORDERED_ARRAY = filesArray
+	else:
+		# break the full array down into rows
+		for rowNum in range(0, matrixDimension) :
+			rowMatrix=[]
+			for colNum in range(0, matrixDimension):
+				matrixIndex=rowNum * matrixDimension + colNum
+				rowMatrix.append(fullArray[matrixIndex])
 		
-		while len(nodeList) > 0:
-			# remove that from the checklist
-			if currentNode in nodeList:
-				nodeList.remove(currentNode)
-				currentPath.append(currentNode)
-			else:
-				break
+			scoreMatrix.append(rowMatrix)
+		
+		
+		# brute force finding nearest neighbors in each row
+		for startNode in range(0,matrixDimension):
+		
+			# checklist = 0 - len(scoreMatrix)
+			nodeList = [x for x in range(0, matrixDimension)]
+			# start with node 0
+		#	startNode = 0
+			pathLength = 0 
+			currentNode = startNode
+			currentPath = []
 			
-			minScore=float(2.0)
+			while len(nodeList) > 0:
+				# remove that from the checklist
+				if currentNode in nodeList:
+					nodeList.remove(currentNode)
+					currentPath.append(currentNode)
+				else:
+					break
+				
+				minScore=float(2.0)
+		
+				for candidate in nodeList:
+		
+					if scoreMatrix[currentNode][candidate] < minScore:
+						minScore = scoreMatrix[currentNode][candidate]
+						nextNode = candidate
+		
+				pathLength += minScore
+		
+				currentNode = nextNode
+		
+			pathsArray.append(currentPath)
+			pathLengthArray.append(pathLength)
+		
+		# find shortest complete path length 
+		bestPath=pathsArray[pathLengthArray.index(min(pathLengthArray))]
+		bestPath.reverse()
+		
+		REORDERED_ARRAY = [ filesArray[x] for x in bestPath ]
 	
-			for candidate in nodeList:
-	
-				if scoreMatrix[currentNode][candidate] < minScore:
-					minScore = scoreMatrix[currentNode][candidate]
-					nextNode = candidate
-	
-			pathLength += minScore
-	
-			currentNode = nextNode
-	
-		pathsArray.append(currentPath)
-		pathLengthArray.append(pathLength)
-	
-	# find shortest complete path length 
-	bestPath=pathsArray[pathLengthArray.index(min(pathLengthArray))]
-	bestPath.reverse()
-	
-	REORDERED_ARRAY = [ filesArray[x] for x in bestPath ]
-
 
 
 def update_progress(progress,total):
@@ -113,35 +126,21 @@ def update_progress(progress,total):
 def reset():
 	matchesArray=[]
 	threadArray=[]
-	global REORDERED_ARRAY
-
-	global bestPath
-	bestPath=[]
 	
-	global hexDumpArray
-	hexDumpArray=[]
+	global FILES_BYTES_ARRAY
+	FILES_BYTES_ARRAY=[]
 
 	global VScale
 	VScale = 1
 
-	global hexFactor
-	# if binary files are converted to hex, each byte becomes 3 characters. If not, ASCII text is 1 byte per char. 
-
 	### Convert binary data to hex
 	for fileNum in range(0,len(REORDERED_ARRAY)):
 
-	# skip this and open as text if file is text
-		if threadMode=="bin":
-			FILE_TO_READ=open(REORDERED_ARRAY[fileNum],"rb").read()	
-			hexDumpArray.append(hexdump.dump(FILE_TO_READ).replace("00 00 ", "") )	# remove 00 padding in sparse data
-			hexFactor = 3
+		FILE_TO_READ=open(REORDERED_ARRAY[fileNum],"rb").read()	
+
+		FILES_BYTES_ARRAY.append(FILE_TO_READ[0:].replace(b'\x00\x00',b''))
 			
-		else: #threadMode=txt
-			FILE_TO_READ=open(REORDERED_ARRAY[fileNum],"r").read()	
-			hexDumpArray.append(FILE_TO_READ)	# add text files as-is
-			hexFactor = 1
-		
-		pVScale = VSIZE/(len(hexDumpArray[fileNum])/hexFactor) 	# fit the largest file vertically, but scale all files the same amount. 
+		pVScale = VSIZE/len(FILES_BYTES_ARRAY[fileNum])	# fit the largest file vertically, but scale all files the same amount. 
 
 # Can't do this with original binary size since some are 00 padded or "sparse"
 		if pVScale < VScale:
@@ -150,10 +149,10 @@ def reset():
 
 # for each pair of files, find matching segments.
 
-def matchBlocks( matchType ):	
+def matchBlocks(  ):	
 
-	for originFile in range(0, len(hexDumpArray)-1):
-		print(f" Completed {originFile} of {len(hexDumpArray)}") 
+	for originFile in range(0, len(FILES_BYTES_ARRAY)-1):
+		print(f" Completed {originFile} of {len(FILES_BYTES_ARRAY)}") 
 		targetFile = originFile+1
 		matchCount=0
 		matchSum=0
@@ -162,27 +161,28 @@ def matchBlocks( matchType ):
 		lastResult=""
 		originByte=0
 		
-		originLength = math.floor( (len(hexDumpArray[originFile])- hexFactor ) / hexFactor)
+		originLength = len(FILES_BYTES_ARRAY[originFile]) - 1
+		maxRange = originLength
 		
-		print(f" {targetFile}/{len(hexDumpArray)}")
+		print(f" {targetFile}/{len(FILES_BYTES_ARRAY)}")
 		while originByte < originLength :
 	
 			update_progress(originByte, originLength)
 	
-			for byteLength in range(minRange,10240):
+			for byteLength in range(minRange,maxRange):
 		
 				if int(originByte + byteLength) < int(originLength) : # don't try to read past the end. oof.
 				
-					charLength = int(hexFactor * byteLength) # searching for hexdump strings, so 3 chars per byte
-					originChars = int(hexFactor * originByte) # searching for hexdump strings, so 3 chars per byte
+					charLength = int(byteLength)
+					originChars = int(originByte)
 							
-					byteBlock = hexDumpArray[originFile][originChars:originChars+charLength] # block of bytes to search for
+					byteBlock = FILES_BYTES_ARRAY[originFile][originChars:originChars+charLength] # block of bytes to search for
 
 				# do the actual search	- just for the first instance
-					wordIndex = hexDumpArray[targetFile].find(byteBlock)
+					wordIndex = FILES_BYTES_ARRAY[targetFile].find(byteBlock)
 							
 					if wordIndex != -1:
-						byteIndex = int(wordIndex/hexFactor)		
+						byteIndex = int(wordIndex)		
 						lastResult= f"{originFile}:{targetFile}\t{byteLength}\t{originByte}\t{byteIndex}"
 						
 					else:
@@ -202,7 +202,7 @@ def matchBlocks( matchType ):
 							
 							currentMatch.append(byteIndex)
 
-							for i in range(targetFile, len(hexDumpArray)-1):
+							for i in range(targetFile, len(FILES_BYTES_ARRAY)-1):
 								currentMatch.append(None)
 							
 #								print(currentMatch)
@@ -227,7 +227,7 @@ def matchBlocks( matchType ):
 				
 			if len(lastResult) > 0:	### matched on end of file/bytesize loop
 				
-				byteIndex = int(wordIndex/hexFactor)
+				byteIndex = int(wordIndex)
 
 				currentMatch=[]
 				currentMatch.append(byteLength-1)
@@ -242,7 +242,7 @@ def matchBlocks( matchType ):
 				
 				currentMatch.append(byteIndex)
 
-				for i in range(targetFile, len(hexDumpArray)-1):
+				for i in range(targetFile, len(FILES_BYTES_ARRAY)-1):
 					currentMatch.append(None)
 
 #					print(currentMatch)
@@ -267,7 +267,7 @@ def matchBlocks( matchType ):
 # for each match found from file n to n+1, look for it in files n+2...
 # blocklength, file0loc, file1loc, ...filenloc
 
-def doThreads( matchType ):
+def doThreads(  ):
 	progress=0
 
 	for blockMatch in matchesArray:
@@ -280,10 +280,10 @@ def doThreads( matchType ):
 			if blockMatch[x] is None:
 				continue
 			else:
-				originChars=int(blockMatch[x]) * hexFactor
+				originChars=int(blockMatch[x])
 				originFile=x-1
-				charLength=blockMatch[0] * hexFactor
-				byteBlock = hexDumpArray[originFile][originChars:originChars + charLength] # block of bytes to search for
+				charLength=blockMatch[0]
+				byteBlock = FILES_BYTES_ARRAY[originFile][originChars:originChars + charLength] # block of bytes to search for
 				break
 
 			
@@ -340,18 +340,12 @@ def drawThreads() :
 	d.save_png(outputFile +'.png')
 	d.save_svg(outputFile +'.svg')
 
-### SETUP
-
-HScale = math.floor(HSize / matrixDimension)
-d = draw.Drawing(HSize, VSIZE+Padding*2, origin=(-1*Padding,-1*Padding)) 
-d.set_pixel_scale(1) # for converting SVG to PNG
-d.append(draw.Rectangle(-1*Padding, -1*Padding, HSize, VSIZE+Padding*2 , fill='#FFFFFF')) # fill the canvas with white bg
 
 
-
-findBestPath()
+### Do the needful
+findBestPath( threadMode )
 reset()
-matchBlocks( "fast" ) # "fast" is optomistic...
-doThreads( "fast" )
-drawThreads( )
+matchBlocks()
+doThreads()
+drawThreads()
 
