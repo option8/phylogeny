@@ -15,6 +15,8 @@ IFS=$'\n'
 pathsArray=()
 arrayIndex=1
 
+TEMPDIR=$(mktemp -d -t fileThread)
+
 # command line switch for binary vs text parsing
 zparseopts -D -E -F -K -- b+=doBinary t+=doText o:=outputFile
 ### -b				parse as binary (default)
@@ -35,7 +37,7 @@ then
 	for fileNum in $(seq 1 $#)
 	do
 		TESTFile=${argv[$fileNum]}
-		TEMPFile="/tmp/"$(echo $TESTFile | tr -c "[:alnum:]" ".")
+		TEMPFile="$TEMPDIR/"$(echo $TESTFile | tr -c "[:alnum:]" ".")
 		echo "Preprocessing text file $TESTFile >> $TEMPFile"
 		cat $TESTFile | tr "[:lower:]" "[:upper:]" | tr -cd "[:alnum:]" > "$TEMPFile"
 		argv[$fileNum]=$TEMPFile
@@ -55,9 +57,9 @@ do
 	TESTFile=${argv[$fileNum]}
 
 	# compress it into a temp file with pbzip2
-	cat "$TESTFile" | pbzip2 -c > "/tmp/Temp1"
+	cat "$TESTFile" | pbzip2 -c > "$TEMPDIR/Temp1"
 	
-	StartZ=$(stat -f %z "/tmp/Temp1")
+	StartZ=$(stat -f %z "$TEMPDIR/Temp1")
 		
 	for AdditionalNum in $(seq 1 $#)
 	do
@@ -71,19 +73,19 @@ do
 			comboScore=1.0
 		else
 			# first compress additional file by itself.
-			cat "$AdditionalTEST" | pbzip2 -c > "/tmp/Temp2"
+			cat "$AdditionalTEST" | pbzip2 -c > "$TEMPDIR/Temp2"
 			
 			# get the compressed size
-			EndZ=$(stat -f %z "/tmp/Temp2")
+			EndZ=$(stat -f %z "$TEMPDIR/Temp2")
 			
 			# get the combined filesize of the compressed files
 			CompCat=$(($StartZ + $EndZ))
 
 			# finally, combine the two uncompressed files, then compress that.
-			cat "$TESTFile" "$AdditionalTEST" | pbzip2 -c > "/tmp/TempZ"
+			cat "$TESTFile" "$AdditionalTEST" | pbzip2 -c > "$TEMPDIR/TempZ"
 
 			# the similarity score is the ratio of the size of the combined compressed files and the sum of the separately compressed files
-			comboScore=$(( (1.0000 * $(stat -f %z "/tmp/TempZ")/CompCat) ))
+			comboScore=$(( (1.0000 * $(stat -f %z "$TEMPDIR/TempZ")/CompCat) ))
 						
 		fi
 		

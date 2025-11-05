@@ -125,19 +125,20 @@ def reset():
 	VScale = 1
 
 	global hexFactor
+	# if binary files are converted to hex, each byte becomes 3 characters. If not, ASCII text is 1 byte per char. 
 
 	### Convert binary data to hex
 	for fileNum in range(0,len(REORDERED_ARRAY)):
 
 	# skip this and open as text if file is text
 		if threadMode=="bin":
-			binary=open(REORDERED_ARRAY[fileNum],"rb").read()	
-			hexDumpArray.append(hexdump.dump(binary).replace("00 00 ", "") )	# remove 00 padding in sparse data
+			FILE_TO_READ=open(REORDERED_ARRAY[fileNum],"rb").read()	
+			hexDumpArray.append(hexdump.dump(FILE_TO_READ).replace("00 00 ", "") )	# remove 00 padding in sparse data
 			hexFactor = 3
 			
 		else: #threadMode=txt
-			binary=open(REORDERED_ARRAY[fileNum],"r").read()	
-			hexDumpArray.append(binary)	# add text files as-is
+			FILE_TO_READ=open(REORDERED_ARRAY[fileNum],"r").read()	
+			hexDumpArray.append(FILE_TO_READ)	# add text files as-is
 			hexFactor = 1
 		
 		pVScale = VSIZE/(len(hexDumpArray[fileNum])/hexFactor) 	# fit the largest file vertically, but scale all files the same amount. 
