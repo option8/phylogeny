@@ -28,4 +28,4 @@ Comparison of 31 English translations of the text of the New Testament Book of M
 
 ### Patchomators.png
 Comparison of 14 releases of Patchomator (https://github.com/Mac-Nerd/patchomator) showing the script's growth and refactoring over time.
-![Patchomators.png](https://github.com/option8/phylogeny/blob/main/examples/Patchomators?raw=true)
+![Patchomators.png](https://github.com/option8/phylogeny/blob/main/examples/Patchomators.png?raw=true)
