@@ -55,7 +55,6 @@ if [[ ${#skipReorder} -gt 0 ]]
 then
 	threadMode="skip"
 	pathsArray=({0..$(($# * $#))})
-	echo pathsArray
 	
 else 
 	echo "$# Files to consider."

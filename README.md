@@ -21,6 +21,8 @@ Vertical grey bars each represent an individual version of the file. Correspondi
 
 Horizontal color bars connecting two file versions represent a region of the file that is common to both. Gaps appear where portions of the file differ from one version to the next. If a section of code, for example, has been moved from the end of the file to the beginning between versions, the colored bar representing that region of code would appear connecting the bottom of one bar to the top of the next.
 
+![More examples](https://github.com/option8/phylogeny/tree/main/examples)
+
 ### Usage
 
 `zsh fileThread.zsh [-t / -b] [-s] [-o Output_FileName] file-1 file-2 ... file-n`
