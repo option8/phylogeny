@@ -12,7 +12,7 @@ This script performs two functions:
 
 	This may be easier to understand by seeing an example.
 
-### Example
+### Example output
 ![14 releases of Patchomator.sh](https://github.com/option8/phylogeny/blob/main/examples/Patchomators.png?raw=true)
 
 This sample image shows 14 release versions of another script I maintain, called [Patchomator](https://github.com/Mac-Nerd/patchomator/releases)
