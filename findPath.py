@@ -46,17 +46,19 @@ fullArray = [float(n) for n in sys.argv[matrixDimension+3:]]
 
 ### SETUP for drawing
 
-HScale = math.floor(HSize / matrixDimension)
-d = draw.Drawing(HSize, VSIZE+Padding*2, origin=(-1*Padding,-1*Padding)) 
+HScale = float(HSize /( matrixDimension - 1))
+d = draw.Drawing(HSize+Padding*2, VSIZE+Padding*2, origin=(-1*Padding,-1*Padding)) 
 d.set_pixel_scale(1) # for converting SVG to PNG
-d.append(draw.Rectangle(-1*Padding, -1*Padding, HSize, VSIZE+Padding*2 , fill='#FFFFFF')) # fill the canvas with white bg
+d.append(draw.Rectangle(-1*Padding, -1*Padding, HSize+Padding*2, VSIZE+Padding*2 , fill='#FFFFFF')) # fill the canvas with white bg
 
 
 
 ### functions
 
 def findBestPath( threadMode ) :
-
+	global STEP_LENGTHS
+	global BEST_STEP_LENGTHS
+	STEP_LENGTHS=[]
 	global REORDERED_ARRAY
 	global bestPath
 	bestPath=[]
@@ -85,6 +87,7 @@ def findBestPath( threadMode ) :
 			pathLength = 0 
 			currentNode = startNode
 			currentPath = []
+			STEP_LENGTHS.append([])
 			
 			while len(nodeList) > 0:
 				# remove that from the checklist
@@ -94,7 +97,7 @@ def findBestPath( threadMode ) :
 				else:
 					break
 				
-				minScore=float(2.0)
+				minScore=float(1.0)
 		
 				for candidate in nodeList:
 		
@@ -102,7 +105,11 @@ def findBestPath( threadMode ) :
 						minScore = scoreMatrix[currentNode][candidate]
 						nextNode = candidate
 		
+				# running tally of path length
 				pathLength += minScore
+				
+				STEP_LENGTHS[startNode].append(minScore)
+				# add the step to the array recording step lengths
 		
 				currentNode = nextNode
 		
@@ -110,8 +117,14 @@ def findBestPath( threadMode ) :
 			pathLengthArray.append(pathLength)
 		
 		# find shortest complete path length 
-		bestPath=pathsArray[pathLengthArray.index(min(pathLengthArray))]
+		shortestPath=pathLengthArray.index(min(pathLengthArray))
+
+		bestPath=pathsArray[shortestPath]
 		bestPath.reverse()
+		
+		BEST_STEP_LENGTHS=STEP_LENGTHS[shortestPath]
+		BEST_STEP_LENGTHS.reverse()
+		
 		
 		REORDERED_ARRAY = [ filesArray[x] for x in bestPath ]
 	
@@ -289,18 +302,33 @@ def doThreads(  ):
 			
 			
 def drawThreads() :
+	global STEP_LENGTHS
+	global HScale
 	print(" Generating graph.")
+		
+	RectX=[]
 	
 	for fileNum in range(0,len(REORDERED_ARRAY)):
-			# draw rectangles
-		emptyRect = draw.Rectangle(fileNum * HScale , 0, 10, VSIZE , fill='#CCCCCC', stroke='#000000', stroke_width=1)
+		
+		# draw rectangles
+		if threadMode != "skip":
+			HScale = float(HSize / (min(pathLengthArray) - 1))
+
+	# scale graph to match relative distances between items?
+			if fileNum == 0:
+				RectX.append(0)
+			else:
+				RectX.append(float(BEST_STEP_LENGTHS[fileNum] * HScale) + RectX[fileNum-1])
+		else:
+			RectX.append(fileNum * HScale)
+		
+		emptyRect = draw.Rectangle(RectX[fileNum] , 0, 10, VSIZE , fill='#CCCCCC', stroke='#000000', stroke_width=1)
 		d.append(emptyRect)
 	
 		# Draw text labels
-		line = draw.Line(fileNum * HScale - 2, VSIZE, fileNum * HScale - 2, 0, stroke='none')
+		line = draw.Line(RectX[fileNum] - 2, VSIZE, RectX[fileNum] - 2, 0, stroke='none')
 		d.append(line)
 		d.append(draw.Text(os.path.basename(REORDERED_ARRAY[fileNum]), 20, path=line, text_anchor='start'))
-
 	
 	colorIndex=0	# for rotating through color palette
 	# draw transparent polygon between right side of origin and left side of destination
@@ -319,7 +347,8 @@ def drawThreads() :
 				
 				CoordY = matchArray[matchNum]* VScale
 			# x, y, width, height
-				d.append(draw.Rectangle( HScale * (matchNum - 1), CoordY, 10, boxHeight, fill=fillColor, stroke_width='none', fill_opacity=.5))
+
+				d.append(draw.Rectangle( RectX[matchNum-1], CoordY, 10, boxHeight, fill=fillColor, stroke_width='none', fill_opacity=.5))
 
 		for matchNum in range(1,len(matchArray)-1): # draw lines back from ends
 			fillColor=colors[colorIndex] #matchNum]
@@ -328,10 +357,10 @@ def drawThreads() :
 				CoordY = matchArray[matchNum]* VScale
 				CoordY2 = matchArray[matchNum+1]* VScale
 				d.append(draw.Lines(
-					HScale*(matchNum-1) + 10, CoordY, 
-					HScale*(matchNum), CoordY2, 
-					HScale*(matchNum), boxHeight + CoordY2, 
-					HScale*(matchNum-1) + 10, CoordY + boxHeight,
+					RectX[matchNum - 1] + 10, CoordY, 
+					RectX[matchNum], CoordY2, 
+					RectX[matchNum], boxHeight + CoordY2, 
+					RectX[matchNum - 1] + 10, CoordY + boxHeight,
 					stroke_width='none', fill=fillColor, close='true', fill_opacity=.25))
 						
 		colorIndex+=1
