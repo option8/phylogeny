@@ -56,4 +56,4 @@ If you're interested in playing with the compression/sorting scheme, it will wor
 - Helptext and documentation
 - Error checking
 - Additional display/output options
-- Options to skip "threading" (reorder-only) and output distance matric for actual phylogeny analysis.
+- Options to skip "threading" (reorder-only) and output distance matrix for actual phylogeny analysis.
