@@ -25,17 +25,18 @@ Horizontal color bars connecting two file versions represent a region of the fil
 
 ### Usage
 
-`zsh fileThread.zsh [-t / -b] [-s] [-o Output_FileName] file-1 file-2 ... file-n`
+`zsh fileThread.zsh [-t / -b] [-rshp] [-m MIN_SIZE] [-o Output_FileName] file-1 file-2 ... file-n`
 
- - `-t` Forces sorting and comparison in *text mode* for ASCII or UTF-8 files. 
- 
- - `-b` Forces sorting and comparison in *binary mode*, default. 
- 
- - `-s` Skips the sorting and re-ordering step, and threads the files in the order as given.
- 
- - `-o Output_Filename` Generates "Output_Filename.svg" and "Output_Filename.png" otherwise defaults to "filethread.svg/png"
+ - `-b`		Forces sorting and comparison in *binary mode*, default. 
+ - `-t`		Forces sorting and comparison in *text mode* for ASCII or UTF-8 files. See note
+ - `-o [filename]`	generates filename.svg (default "File-Ogeny.svg")
+ - `-r`		reorders (default) and reverses result
+ - `-s`		skips the pathfinding step, parses files in order they are given (overrides -r)
+ - `-m [integer]`	minimum size (characters/bytes) of matching regions (default 8)
+ - `-h`		print this help
+ - `-p`		just print out phylogeny distance matrix, [suitable for analysis here](https://www.trex.uqam.ca/index.php?action=trex&menuD=1&method=2)
 
-In *text mode*, any non-alphanumeric characters are removed, and everything that remains is converted to all upper case.
+*Note:* In *text mode*, any non-alphanumeric characters are removed, and everything that remains is converted to all upper case.
 
 In *binary mode*, repeated null (x00) bytes are collapsed, so the contents of sparse binaries can be compared without concern for empty space.
 
