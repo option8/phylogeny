@@ -43,10 +43,13 @@ In *binary mode*, repeated null (x00) bytes are collapsed, so the contents of sp
 
 Currently only tested on macOS Sequoia (15.x). Probably works on Tahoe, or any Mac with ZSH and Python 3.x.
 
-Requires installing `pbzip2`. Install it with homebrew:
+Requires:
+- `pbzip2` Install it with homebrew:
 ```brew install pbzip2```
+- `numpy` See [numpy.org/install](https://numpy.org/install/)
+- `SVGWrite` See [github.com/mozman/svgwrite](https://github.com/mozman/svgwrite/)
 
-If you're interested in playing with the compression/sorting scheme, it will work with `gzip`, `pkzip`, among others - but `pbzip` was most consistent in my testing.
+If you're interested in playing with the compression/sorting scheme, it will work with `gzip`, `pkzip`, among others - but `pbzip2` was most consistent in my testing.
 
 ### To Do
 - Helptext and documentation
