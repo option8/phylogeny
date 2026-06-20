@@ -45,6 +45,7 @@ In *binary mode*, repeated null (x00) bytes are collapsed, so the contents of sp
 Currently only tested on macOS Sequoia (15.x). Probably works on Tahoe, or any Mac with ZSH and Python 3.x.
 
 Requires:
+- macOS 15.x or higher.
 - `pbzip2` Install it with homebrew:
 ```brew install pbzip2```
 - `numpy` See [numpy.org/install](https://numpy.org/install/)
@@ -52,8 +53,16 @@ Requires:
 
 If you're interested in playing with the compression/sorting scheme, it will work with `gzip`, `pkzip`, among others - but `pbzip2` was most consistent in my testing.
 
-### To Do
-- Helptext and documentation
-- Error checking
-- Additional display/output options
-- Options to skip "threading" (reorder-only) and output distance matrix for actual phylogeny analysis.
+### Installation
+Install in a Python virtual environment, as is best practice.
+```uv venv --python 3.14
+source .venv/bin/activate```
+
+Install required libraries `numpy` and `SVGWrite`
+```uv pip install -r requirements.txt```
+
+### To Do (please help)
+- Helptext and documentation.
+- Error checking.
+- Additional display/output options.
+- Decouple from zsh.
