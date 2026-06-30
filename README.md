@@ -57,11 +57,17 @@ If you're interested in playing with the compression/sorting scheme, it will wor
 
 ### Installation
 Install in a Python virtual environment, as is best practice.
-```uv venv --python 3.14
-source .venv/bin/activate```
+
+```
+uv venv --python 3.14
+source .venv/bin/activate
+```
 
 Install required libraries `numpy` and `SVGWrite`
-```uv pip install -r requirements.txt```
+
+```
+uv pip install -r requirements.txt
+```
 
 ### To Do (please help)
 - Helptext and documentation.
